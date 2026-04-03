@@ -1,0 +1,29 @@
+{
+  "name": "ai-agent-content-strategy",
+  "version": "1.0.0",
+  "description": "Content Intelligence Agent that researches trends, analyzes sources, and generates data-driven content strategies and drafts using AI, RAG, and multi-step reasoning.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "ai-agent",
+    "typescript",
+    "llm",
+    "portfolio"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  }
+}
