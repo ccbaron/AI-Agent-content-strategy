@@ -3,12 +3,22 @@
 Content Intelligence Agent that researches trends, analyzes sources, and generates data-driven content strategies and drafts using AI, RAG, and multi-step reasoning.
 
 ## Current phase
-Phase 1 - Project bootstrap
+
+Initial CLI agent with memory
+
+## Core capabilities in progress
+
+- conversational CLI interface
+- OpenAI integration
+- configurable model selection
+- conversation memory
+- domain-specific system prompt
 
 ## Tech stack
+
 - Node.js
 - TypeScript
-- tsx
+- OpenAI SDK
 - dotenv
 - zod
 
@@ -18,3 +28,4 @@ Phase 1 - Project bootstrap
 
 ```bash
 npm install
+```
