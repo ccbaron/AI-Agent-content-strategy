@@ -46,10 +46,15 @@ ${planningContext}`,
       },
     ];
 
+    const shouldEnableTools =
+      taskPlan.shouldResearch ||
+      taskPlan.taskType === "comparison" ||
+      taskPlan.taskType === "research";
+
     const initialResponse = await this.client.responses.create({
       model: config.OPENAI_MODEL,
       instructions: systemPrompt,
-      tools: taskPlan.shouldResearch ? toolDefinitions : [],
+      tools: shouldEnableTools ? toolDefinitions : [],
       input,
     });
 

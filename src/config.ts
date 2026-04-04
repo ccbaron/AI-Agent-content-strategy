@@ -7,12 +7,14 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
   OPENAI_MODEL: z.string().min(1).default("gpt-5-nano"),
   TAVILY_API_KEY: z.string().min(1, "TAVILY_API_KEY is required"),
+  KNOWLEDGE_DIR: z.string().min(1).default("knowledge"),
 });
 
 const parsedEnv = envSchema.safeParse({
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_MODEL: process.env.OPENAI_MODEL || "gpt-5-nano",
   TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  KNOWLEDGE_DIR: process.env.KNOWLEDGE_DIR || "knowledge",
 });
 
 if (!parsedEnv.success) {

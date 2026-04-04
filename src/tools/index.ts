@@ -1,4 +1,5 @@
 import type OpenAI from "openai";
+import { searchKnowledge } from "../rag/retriever.js";
 import { readUrl } from "./read-url.js";
 import { webSearch } from "./web-search.js";
 
@@ -35,6 +36,25 @@ export const toolDefinitions = [
         },
       },
       required: ["url"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function",
+    name: "knowledge_search",
+    description:
+      "Search the internal knowledge base for relevant notes, documents, or strategic content context.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "A semantic search query for the internal knowledge base.",
+        },
+      },
+      required: ["query"],
       additionalProperties: false,
     },
     strict: true,
@@ -101,6 +121,20 @@ export async function executeToolCall(
         type: "function_call_output",
         call_id: toolCall.call_id,
         output: JSON.stringify(result),
+      };
+    }
+
+    case "knowledge_search": {
+      const query = String(parsedArguments.query || "");
+      const result = await searchKnowledge(query, 3);
+
+      return {
+        type: "function_call_output",
+        call_id: toolCall.call_id,
+        output: JSON.stringify({
+          query,
+          results: result,
+        }),
       };
     }
 
