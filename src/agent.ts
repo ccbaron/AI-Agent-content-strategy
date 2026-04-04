@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { config } from "./config.js";
+import { createTaskPlan } from "./planner.js";
 import { systemPrompt } from "./prompts.js";
 import {
   executeToolCall,
@@ -25,18 +26,30 @@ export class ContentIntelligenceAgent {
   }
 
   async reply(userMessage: string): Promise<string> {
+    const taskPlan = await createTaskPlan(userMessage);
+
+    const planningContext = `
+Task type: ${taskPlan.taskType}
+Should research: ${taskPlan.shouldResearch}
+Response goal: ${taskPlan.responseGoal}
+Preferred output format: ${taskPlan.outputFormat}
+    `.trim();
+
     const input = [
       ...this.conversationHistory,
       {
         role: "user" as const,
-        content: userMessage,
+        content: `${userMessage}
+
+Planning context:
+${planningContext}`,
       },
     ];
 
     const initialResponse = await this.client.responses.create({
       model: config.OPENAI_MODEL,
       instructions: systemPrompt,
-      tools: toolDefinitions,
+      tools: taskPlan.shouldResearch ? toolDefinitions : [],
       input,
     });
 
@@ -51,11 +64,7 @@ export class ContentIntelligenceAgent {
       const finalResponse = await this.client.responses.create({
         model: config.OPENAI_MODEL,
         previous_response_id: initialResponse.id,
-        input: toolOutputs as {
-          type: "custom_tool_call_output";
-          call_id: string;
-          output: string;
-        }[],
+        input: toolOutputs,
       });
 
       finalText =

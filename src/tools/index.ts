@@ -48,6 +48,12 @@ type FunctionCallItem = {
   arguments: string;
 };
 
+export type FunctionToolCallOutput = {
+  type: "function_call_output";
+  call_id: string;
+  output: string;
+};
+
 function isFunctionCallItem(item: unknown): item is FunctionCallItem {
   if (!item || typeof item !== "object") {
     return false;
@@ -67,7 +73,9 @@ export function getFunctionCalls(output: unknown[]): FunctionCallItem[] {
   return output.filter(isFunctionCallItem);
 }
 
-export async function executeToolCall(toolCall: FunctionCallItem) {
+export async function executeToolCall(
+  toolCall: FunctionCallItem,
+): Promise<FunctionToolCallOutput> {
   const parsedArguments = JSON.parse(toolCall.arguments) as Record<
     string,
     unknown
