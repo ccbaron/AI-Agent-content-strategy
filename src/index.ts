@@ -15,6 +15,7 @@ function askQuestion(question: string): Promise<string> {
 function printWelcomeMessage(): void {
   console.log("Content Intelligence Agent CLI started.");
   console.log(`Model configured: ${config.OPENAI_MODEL}`);
+  console.log("Research tools enabled: web_search, read_url");
   console.log("Type your message and press Enter.");
   console.log('Commands: "exit" to quit, "/clear" to reset memory.\n');
 }
