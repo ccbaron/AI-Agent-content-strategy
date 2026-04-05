@@ -8,7 +8,8 @@
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "knowledge:index": "tsx src/scripts/build-knowledge-index.ts"
+    "knowledge:index": "tsx src/scripts/build-knowledge-index.ts",
+    "web": "tsx src/server.ts"
   },
   "keywords": [
     "ai-agent",
@@ -20,12 +21,16 @@
   "license": "MIT",
   "dependencies": {
     "@tavily/core": "^0.7.2",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.7",
+    "express": "^5.2.1",
     "fast-glob": "^3.3.3",
     "openai": "^6.33.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^24.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.8.3"

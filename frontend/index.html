@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Content Intelligence Agent</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="header-content">
+          <div class="header-orb">
+            <div class="header-orb-ring"></div>
+            <div class="header-orb-core"></div>
+          </div>
+
+          <div class="header-copy">
+            <h1>Content Intelligence Agent</h1>
+            <p>Research, compare, rewrite, and synthesize with a more strategic workflow.</p>
+          </div>
+
+          <button id="resetButton" class="header-reset-button" type="button">
+            Reset memory
+          </button>
+        </div>
+      </header>
+
+      <main id="chat">
+        <section id="welcome" class="welcome">
+          <div class="ai-orb">
+            <div class="ai-orb-ring ai-orb-ring--outer"></div>
+            <div class="ai-orb-ring ai-orb-ring--inner"></div>
+            <div class="ai-orb-core"></div>
+          </div>
+
+          <h2>Your strategic content copilot</h2>
+          <p>
+            Use research tools, internal knowledge, and structured reasoning to explore
+            messaging, compare competitors, improve positioning, and generate stronger content directions.
+          </p>
+
+          <div class="suggestions">
+            <button class="suggestion" data-suggestion type="button">
+              Compare the positioning of generic LLM chat tools versus a content intelligence agent for marketing teams
+            </button>
+            <button class="suggestion" data-suggestion type="button">
+              Use the internal knowledge base to rewrite this headline in a sharper strategic tone: We help teams create better content faster
+            </button>
+            <button class="suggestion" data-suggestion type="button">
+              Research current headline patterns used by AI productivity startups and propose three better hero directions
+            </button>
+          </div>
+        </section>
+
+        <section id="messages" class="messages"></section>
+      </main>
+
+      <footer>
+        <form id="chatForm">
+          <div class="input-wrapper">
+            <textarea
+              id="messageInput"
+              rows="1"
+              placeholder="Ask the agent to research, compare, rewrite, or analyze content strategy..."
+              autofocus
+            ></textarea>
+
+            <button type="submit" id="sendButton" title="Send message">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+              </svg>
+            </button>
+          </div>
+        </form>
+      </footer>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
