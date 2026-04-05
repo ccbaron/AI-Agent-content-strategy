@@ -26,6 +26,13 @@ Initial CLI agent with memory
 
 1. Install dependencies
 
+## Knowledge index
+
+To build the local knowledge index:
+
+````bash
+npm run knowledge:index
+
 ```bash
 npm install
-```
+````

@@ -1,12 +1,8 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import fg from "fast-glob";
-import { config } from "../config.js";
-import { chunkText } from "./chunker.js";
 import { createEmbedding } from "./embeddings.js";
-import type { KnowledgeChunk, RetrievedChunk } from "./types.js";
+import { loadKnowledgeIndex } from "./indexer.js";
+import type { IndexedKnowledgeChunk, RetrievedChunk } from "./types.js";
 
-let knowledgeIndex: KnowledgeChunk[] = [];
+let knowledgeIndex: IndexedKnowledgeChunk[] = [];
 let isInitialized = false;
 
 function cosineSimilarity(a: number[], b: number[]): number {
@@ -18,10 +14,10 @@ function cosineSimilarity(a: number[], b: number[]): number {
   let magnitudeA = 0;
   let magnitudeB = 0;
 
-  for (let i = 0; i < a.length; i += 1) {
-    dotProduct += a[i] * b[i];
-    magnitudeA += a[i] * a[i];
-    magnitudeB += b[i] * b[i];
+  for (let index = 0; index < a.length; index += 1) {
+    dotProduct += a[index] * b[index];
+    magnitudeA += a[index] * a[index];
+    magnitudeB += b[index] * b[index];
   }
 
   const denominator = Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB);
@@ -33,33 +29,9 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / denominator;
 }
 
-async function buildKnowledgeIndex(): Promise<void> {
-  const baseDir = path.resolve(config.KNOWLEDGE_DIR);
-  const filePaths = await fg(["**/*.md", "**/*.txt"], {
-    cwd: baseDir,
-    absolute: true,
-  });
-
-  const chunks: KnowledgeChunk[] = [];
-
-  for (const filePath of filePaths) {
-    const rawContent = await readFile(filePath, "utf-8");
-    const textChunks = chunkText(rawContent);
-
-    for (let index = 0; index < textChunks.length; index += 1) {
-      const content = textChunks[index];
-      const embedding = await createEmbedding(content);
-
-      chunks.push({
-        id: `${path.basename(filePath)}-${index}`,
-        source: path.relative(process.cwd(), filePath),
-        content,
-        embedding,
-      });
-    }
-  }
-
-  knowledgeIndex = chunks;
+async function initializeKnowledgeIndex(): Promise<void> {
+  const loadedIndex = await loadKnowledgeIndex();
+  knowledgeIndex = loadedIndex.chunks;
   isInitialized = true;
 }
 
@@ -68,7 +40,7 @@ export async function searchKnowledge(
   limit = 3,
 ): Promise<RetrievedChunk[]> {
   if (!isInitialized) {
-    await buildKnowledgeIndex();
+    await initializeKnowledgeIndex();
   }
 
   if (!knowledgeIndex.length) {
