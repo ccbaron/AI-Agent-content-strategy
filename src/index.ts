@@ -1,6 +1,6 @@
 import readline from "node:readline";
 import { stdin as input, stdout as output } from "node:process";
-import { config } from "./config.js";
+import { config, logConfiguredServices } from "./config.js";
 import { ContentIntelligenceAgent } from "./agent.js";
 
 const rl = readline.createInterface({ input, output });
@@ -14,7 +14,7 @@ function askQuestion(question: string): Promise<string> {
 
 function printWelcomeMessage(): void {
   console.log("Content Intelligence Agent CLI started.");
-  console.log(`Model configured: ${config.OPENAI_MODEL}`);
+  console.log(`Model configured: ${config.GEMINI_MODEL}`);
   console.log("Research tools enabled: web_search, read_url, knowledge_search");
   console.log("Planning layer enabled: task classification and response routing");
   console.log("Evaluation layer enabled: answer quality checks and revision");
@@ -23,6 +23,7 @@ function printWelcomeMessage(): void {
 }
 
 async function main(): Promise<void> {
+  logConfiguredServices();
   printWelcomeMessage();
 
   while (true) {

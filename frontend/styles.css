@@ -404,12 +404,12 @@ footer {
 
 .input-wrapper {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
 
 .input-wrapper:focus-within {

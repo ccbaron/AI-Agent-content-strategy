@@ -1,5 +1,6 @@
 import { gemini } from "./gemini/client.js";
 import { config } from "./config.js";
+import { getEvaluatorGenerationConfig } from "./gemini/generation-config.js";
 
 export type EvaluationResult = {
   shouldRevise: boolean;
@@ -78,6 +79,7 @@ ${args.responseText}
         },
       ],
       config: {
+        ...getEvaluatorGenerationConfig(),
         responseMimeType: "application/json",
         responseJsonSchema: evaluationSchema,
       },

@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { buildKnowledgeIndex, saveKnowledgeIndex } from "../rag/indexer.js";
 
 async function main(): Promise<void> {

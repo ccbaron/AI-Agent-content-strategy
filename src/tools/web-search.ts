@@ -12,12 +12,17 @@ type TavilySearchResult = {
 };
 
 export async function webSearch(query: string) {
-  const response = await tavilyClient.search(query);
+  const response = await tavilyClient.search(query, {
+    searchDepth: "basic",
+    maxResults: config.TAVILY_MAX_RESULTS,
+    includeRawContent: false,
+    topic: "general",
+  });
 
   const normalizedResults = (
     (response.results as TavilySearchResult[] | undefined) || []
   )
-    .slice(0, 5)
+    .slice(0, config.TAVILY_MAX_RESULTS)
     .map((result) => ({
       title: result.title || "Untitled source",
       url: result.url || "",

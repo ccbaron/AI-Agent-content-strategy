@@ -2,7 +2,7 @@ import cors from "cors";
 import express from "express";
 import { join } from "node:path";
 import { ContentIntelligenceAgent } from "./agent.js";
-import { config } from "./config.js";
+import { config, logConfiguredServices } from "./config.js";
 
 const app = express();
 const agent = new ContentIntelligenceAgent();
@@ -21,7 +21,7 @@ app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
     app: "content-intelligence-agent",
-    model: config.OPENAI_MODEL,
+    model: config.GEMINI_MODEL,
   });
 });
 
@@ -58,6 +58,8 @@ app.post("/api/reset", (_req, res) => {
     message: "Conversation memory cleared.",
   });
 });
+
+logConfiguredServices();
 
 app.listen(config.PORT, () => {
   console.log(`Web server running at http://localhost:${config.PORT}`);

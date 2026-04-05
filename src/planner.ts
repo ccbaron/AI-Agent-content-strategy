@@ -1,5 +1,6 @@
 import { gemini } from "./gemini/client.js";
 import { config } from "./config.js";
+import { getPlannerGenerationConfig } from "./gemini/generation-config.js";
 
 export type TaskType =
   | "research"
@@ -82,6 +83,7 @@ ${userMessage}
         },
       ],
       config: {
+        ...getPlannerGenerationConfig(),
         responseMimeType: "application/json",
         responseJsonSchema: planningSchema,
       },

@@ -1,7 +1,10 @@
-import type { GenerateContentConfig } from "@google/genai";
 import { gemini } from "./gemini/client.js";
 import { config } from "./config.js";
 import { evaluateResponse } from "./evaluator.js";
+import {
+  getBaseGenerationConfig,
+  getToolEnabledGenerationConfig,
+} from "./gemini/generation-config.js";
 import { createTaskPlan } from "./planner.js";
 import { systemPrompt } from "./prompts.js";
 import { executeFunctionCall, functionDeclarations } from "./tools/index.js";
@@ -33,11 +36,15 @@ Preferred output format: ${taskPlan.outputFormat}
       taskPlan.taskType === "comparison" ||
       taskPlan.taskType === "research";
 
+    const recentHistory = this.conversationHistory.slice(
+      -config.MAX_CONVERSATION_MESSAGES,
+    );
+
     const contents: Array<{
       role: "user" | "model";
       parts: Array<Record<string, unknown>>;
     }> = [
-      ...this.conversationHistory.map((message) => ({
+      ...recentHistory.map((message) => ({
         role:
           message.role === "assistant" ? ("model" as const) : ("user" as const),
         parts: [{ text: message.content }],
@@ -58,12 +65,9 @@ ${planningContext}`,
       },
     ];
 
-    const generationConfig: GenerateContentConfig | undefined =
-      shouldEnableTools
-        ? {
-            tools: [{ functionDeclarations }],
-          }
-        : undefined;
+    const generationConfig = shouldEnableTools
+      ? getToolEnabledGenerationConfig()
+      : getBaseGenerationConfig();
 
     let finalText = "";
 
@@ -114,12 +118,25 @@ ${planningContext}`,
       break;
     }
 
-    const evaluation = await evaluateResponse({
-      userMessage,
-      responseText: finalText,
-      taskType: taskPlan.taskType,
-      shouldResearch: taskPlan.shouldResearch,
-    });
+    const shouldEvaluate =
+      config.EVALUATOR_ENABLED &&
+      (taskPlan.shouldResearch ||
+        taskPlan.taskType === "comparison" ||
+        finalText.length > 500);
+
+    const evaluation = shouldEvaluate
+      ? await evaluateResponse({
+          userMessage,
+          responseText: finalText,
+          taskType: taskPlan.taskType,
+          shouldResearch: taskPlan.shouldResearch,
+        })
+      : {
+          shouldRevise: false,
+          revisionReason: "",
+          strengths: [],
+          weaknesses: [],
+        };
 
     let assistantMessage = finalText;
 
@@ -152,6 +169,7 @@ Please produce a stronger final answer that better satisfies the request.
             ],
           },
         ],
+        config: getBaseGenerationConfig(),
       });
 
       assistantMessage = revisionResponse.text || assistantMessage;
