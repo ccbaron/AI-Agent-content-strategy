@@ -1,144 +1,97 @@
-import type OpenAI from "openai";
+import { Type } from "@google/genai";
 import { searchKnowledge } from "../rag/retriever.js";
 import { readUrl } from "./read-url.js";
 import { webSearch } from "./web-search.js";
 
-export const toolDefinitions = [
+type StringArgumentSchema = {
+  type: Type.STRING;
+  description: string;
+};
+
+type FunctionDeclarationSchema = {
+  name: string;
+  description: string;
+  parameters: {
+    type: Type.OBJECT;
+    properties: Record<string, StringArgumentSchema>;
+    required: string[];
+  };
+};
+
+export const functionDeclarations: FunctionDeclarationSchema[] = [
   {
-    type: "function",
     name: "web_search",
     description:
       "Search the web for recent information, articles, and source candidates related to content strategy, trends, comparisons, or market context.",
     parameters: {
-      type: "object",
+      type: Type.OBJECT,
       properties: {
         query: {
-          type: "string",
+          type: Type.STRING,
           description: "A focused web search query.",
         },
       },
       required: ["query"],
-      additionalProperties: false,
     },
-    strict: true,
   },
   {
-    type: "function",
     name: "read_url",
     description:
       "Read the content of a specific public URL to extract the main text for deeper analysis, summarization, or comparison.",
     parameters: {
-      type: "object",
+      type: Type.OBJECT,
       properties: {
         url: {
-          type: "string",
+          type: Type.STRING,
           description: "A public URL to inspect.",
         },
       },
       required: ["url"],
-      additionalProperties: false,
     },
-    strict: true,
   },
   {
-    type: "function",
     name: "knowledge_search",
     description:
       "Search the internal knowledge base for relevant notes, documents, or strategic content context.",
     parameters: {
-      type: "object",
+      type: Type.OBJECT,
       properties: {
         query: {
-          type: "string",
+          type: Type.STRING,
           description:
             "A semantic search query for the internal knowledge base.",
         },
       },
       required: ["query"],
-      additionalProperties: false,
     },
-    strict: true,
   },
-] satisfies OpenAI.Responses.Tool[];
+];
 
-type FunctionCallItem = {
-  type: "function_call";
-  call_id: string;
+export async function executeFunctionCall(functionCall: {
+  id?: string;
   name: string;
-  arguments: string;
-};
-
-export type FunctionToolCallOutput = {
-  type: "function_call_output";
-  call_id: string;
-  output: string;
-};
-
-function isFunctionCallItem(item: unknown): item is FunctionCallItem {
-  if (!item || typeof item !== "object") {
-    return false;
-  }
-
-  const candidate = item as Record<string, unknown>;
-
-  return (
-    candidate.type === "function_call" &&
-    typeof candidate.call_id === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.arguments === "string"
-  );
-}
-
-export function getFunctionCalls(output: unknown[]): FunctionCallItem[] {
-  return output.filter(isFunctionCallItem);
-}
-
-export async function executeToolCall(
-  toolCall: FunctionCallItem,
-): Promise<FunctionToolCallOutput> {
-  const parsedArguments = JSON.parse(toolCall.arguments) as Record<
-    string,
-    unknown
-  >;
-
-  switch (toolCall.name) {
+  args: Record<string, unknown>;
+}) {
+  switch (functionCall.name) {
     case "web_search": {
-      const query = String(parsedArguments.query || "");
+      const query = String(functionCall.args.query || "");
       const result = await webSearch(query);
-
-      return {
-        type: "function_call_output",
-        call_id: toolCall.call_id,
-        output: JSON.stringify(result),
-      };
+      return { query, results: result.results };
     }
 
     case "read_url": {
-      const url = String(parsedArguments.url || "");
+      const url = String(functionCall.args.url || "");
       const result = await readUrl(url);
-
-      return {
-        type: "function_call_output",
-        call_id: toolCall.call_id,
-        output: JSON.stringify(result),
-      };
+      return result;
     }
 
     case "knowledge_search": {
-      const query = String(parsedArguments.query || "");
-      const result = await searchKnowledge(query, 3);
-
-      return {
-        type: "function_call_output",
-        call_id: toolCall.call_id,
-        output: JSON.stringify({
-          query,
-          results: result,
-        }),
-      };
+      const query = String(functionCall.args.query || "");
+      const results = await searchKnowledge(query, 3);
+      return { query, results };
     }
 
     default:
-      throw new Error(`Unsupported tool call: ${toolCall.name}`);
+      throw new Error(`Unsupported function call: ${functionCall.name}`);
   }
 }

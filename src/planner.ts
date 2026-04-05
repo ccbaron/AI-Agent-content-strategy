@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { gemini } from "./gemini/client.js";
 import { config } from "./config.js";
 
 export type TaskType =
@@ -45,10 +45,6 @@ const planningSchema = {
   required: ["taskType", "shouldResearch", "responseGoal", "outputFormat"],
 } as const;
 
-const plannerClient = new OpenAI({
-  apiKey: config.OPENAI_API_KEY,
-});
-
 const fallbackPlan: TaskPlan = {
   taskType: "general",
   shouldResearch: false,
@@ -58,12 +54,14 @@ const fallbackPlan: TaskPlan = {
 
 export async function createTaskPlan(userMessage: string): Promise<TaskPlan> {
   try {
-    const response = await plannerClient.responses.create({
-      model: config.OPENAI_MODEL,
-      input: [
+    const response = await gemini.models.generateContent({
+      model: config.GEMINI_MODEL,
+      contents: [
         {
-          role: "system",
-          content: `
+          role: "user",
+          parts: [
+            {
+              text: `
 You are a planning layer for a Content Intelligence Agent.
 
 Analyze the user's request and return a JSON plan.
@@ -76,30 +74,24 @@ Prefer research when the request involves:
 - article-based analysis
 - source-grounded recommendations
 
-Return only the structured result.
-          `.trim(),
-        },
-        {
-          role: "user",
-          content: userMessage,
+User request:
+${userMessage}
+              `.trim(),
+            },
+          ],
         },
       ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "task_plan",
-          strict: true,
-          schema: planningSchema,
-        },
+      config: {
+        responseMimeType: "application/json",
+        responseJsonSchema: planningSchema,
       },
     });
 
-    if (!response.output_text) {
+    if (!response.text) {
       return fallbackPlan;
     }
 
-    const parsedPlan = JSON.parse(response.output_text) as TaskPlan;
-    return parsedPlan;
+    return JSON.parse(response.text) as TaskPlan;
   } catch {
     return fallbackPlan;
   }

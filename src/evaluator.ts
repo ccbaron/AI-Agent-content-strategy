@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { gemini } from "./gemini/client.js";
 import { config } from "./config.js";
 
 export type EvaluationResult = {
@@ -8,20 +8,12 @@ export type EvaluationResult = {
   weaknesses: string[];
 };
 
-const evaluatorClient = new OpenAI({
-  apiKey: config.OPENAI_API_KEY,
-});
-
 const evaluationSchema = {
   type: "object",
   additionalProperties: false,
   properties: {
-    shouldRevise: {
-      type: "boolean",
-    },
-    revisionReason: {
-      type: "string",
-    },
+    shouldRevise: { type: "boolean" },
+    revisionReason: { type: "string" },
     strengths: {
       type: "array",
       items: { type: "string" },
@@ -48,12 +40,14 @@ export async function evaluateResponse(args: {
   shouldResearch: boolean;
 }): Promise<EvaluationResult> {
   try {
-    const response = await evaluatorClient.responses.create({
-      model: config.OPENAI_MODEL,
-      input: [
+    const response = await gemini.models.generateContent({
+      model: config.GEMINI_MODEL,
+      contents: [
         {
-          role: "system",
-          content: `
+          role: "user",
+          parts: [
+            {
+              text: `
 You evaluate responses produced by a Content Intelligence Agent.
 
 Your task is to judge whether the answer should be revised before being shown to the user.
@@ -66,12 +60,7 @@ Revise only if there is a meaningful issue such as:
 - vague or generic output when a more strategic answer was needed
 
 Do not request revision for minor stylistic preferences.
-Return only the structured result.
-          `.trim(),
-        },
-        {
-          role: "user",
-          content: `
+
 User request:
 ${args.userMessage}
 
@@ -83,24 +72,22 @@ ${args.shouldResearch}
 
 Draft response:
 ${args.responseText}
-          `.trim(),
+              `.trim(),
+            },
+          ],
         },
       ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "evaluation_result",
-          strict: true,
-          schema: evaluationSchema,
-        },
+      config: {
+        responseMimeType: "application/json",
+        responseJsonSchema: evaluationSchema,
       },
     });
 
-    if (!response.output_text) {
+    if (!response.text) {
       return fallbackEvaluation;
     }
 
-    return JSON.parse(response.output_text) as EvaluationResult;
+    return JSON.parse(response.text) as EvaluationResult;
   } catch {
     return fallbackEvaluation;
   }

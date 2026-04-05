@@ -1,4 +1,4 @@
-import { createEmbedding } from "./embeddings.js";
+import { createQueryEmbedding } from "./embeddings.js";
 import { loadKnowledgeIndex } from "./indexer.js";
 import type { IndexedKnowledgeChunk, RetrievedChunk } from "./types.js";
 
@@ -47,7 +47,7 @@ export async function searchKnowledge(
     return [];
   }
 
-  const queryEmbedding = await createEmbedding(query);
+  const queryEmbedding = await createQueryEmbedding(query);
 
   return knowledgeIndex
     .map((chunk) => ({
