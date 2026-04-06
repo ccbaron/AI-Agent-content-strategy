@@ -489,3 +489,19 @@ footer {
     padding-right: 0;
   }
 }
+
+.tool-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tool-log-item {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}

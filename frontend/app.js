@@ -6,6 +6,7 @@ const sendButton = document.getElementById("sendButton");
 const resetButton = document.getElementById("resetButton");
 
 let isGenerating = false;
+let currentEventSource = null;
 
 function escapeHtml(text) {
   const div = document.createElement("div");
@@ -43,6 +44,7 @@ function createAgentContainer() {
         <span class="dots"><span></span></span>
         <span class="status-text">Thinking...</span>
       </div>
+      <div class="tool-log" style="display: none;"></div>
       <div class="text-content" style="display: none;"></div>
     </div>
   `;
@@ -52,13 +54,36 @@ function createAgentContainer() {
   return el;
 }
 
-function showAgentMessage(container, text) {
+function updateStatus(container, text) {
+  const statusText = container.querySelector(".status-text");
+  statusText.textContent = text;
+  scrollToBottom();
+}
+
+function addToolLog(container, text) {
+  const toolLog = container.querySelector(".tool-log");
+  toolLog.style.display = "block";
+
+  const item = document.createElement("div");
+  item.className = "tool-log-item";
+  item.textContent = text;
+  toolLog.appendChild(item);
+
+  scrollToBottom();
+}
+
+function appendAgentChunk(container, text) {
   const statusEl = container.querySelector(".status");
   const textEl = container.querySelector(".text-content");
 
   statusEl.style.display = "none";
   textEl.style.display = "block";
-  textEl.innerHTML = renderBasicMarkdown(text);
+
+  const currentRaw = textEl.dataset.rawText || "";
+  const nextRaw = currentRaw + text;
+
+  textEl.dataset.rawText = nextRaw;
+  textEl.innerHTML = renderBasicMarkdown(nextRaw);
 
   scrollToBottom();
 }
@@ -95,6 +120,13 @@ function setLoadingState(isLoading) {
   messageInput.disabled = isLoading;
 }
 
+function closeCurrentStream() {
+  if (currentEventSource) {
+    currentEventSource.close();
+    currentEventSource = null;
+  }
+}
+
 async function sendMessage(text) {
   if (!text || isGenerating) return;
 
@@ -107,28 +139,39 @@ async function sendMessage(text) {
 
   const agentContainer = createAgentContainer();
 
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: text }),
-    });
+  closeCurrentStream();
 
-    const data = await response.json();
+  const streamUrl = `/api/chat/stream?message=${encodeURIComponent(text)}`;
+  const eventSource = new EventSource(streamUrl);
+  currentEventSource = eventSource;
 
-    if (!response.ok) {
-      throw new Error(data.error || "Something went wrong.");
-    }
+  eventSource.addEventListener("status", (event) => {
+    const data = JSON.parse(event.data);
+    updateStatus(agentContainer, data.message);
+  });
 
-    showAgentMessage(agentContainer, data.message);
-  } catch (error) {
-    showError(agentContainer, error.message || "Unexpected error.");
-  } finally {
+  eventSource.addEventListener("tool", (event) => {
+    const data = JSON.parse(event.data);
+    addToolLog(agentContainer, `Used tool: ${data.toolName}`);
+  });
+
+  eventSource.addEventListener("chunk", (event) => {
+    const data = JSON.parse(event.data);
+    appendAgentChunk(agentContainer, data.text);
+  });
+
+  eventSource.addEventListener("done", () => {
+    closeCurrentStream();
     setLoadingState(false);
     messageInput.focus();
-  }
+  });
+
+  eventSource.addEventListener("error", (event) => {
+    console.error("SSE error:", event);
+    showError(agentContainer, "Streaming connection failed.");
+    closeCurrentStream();
+    setLoadingState(false);
+  });
 }
 
 chatForm.addEventListener("submit", async (event) => {
@@ -156,12 +199,15 @@ document.addEventListener("click", async (event) => {
 
 resetButton.addEventListener("click", async () => {
   try {
+    closeCurrentStream();
+
     await fetch("/api/reset", {
       method: "POST",
     });
 
     messagesEl.innerHTML = "";
     welcomeEl.style.display = "flex";
+    setLoadingState(false);
     messageInput.focus();
   } catch (error) {
     console.error("Reset error:", error);
