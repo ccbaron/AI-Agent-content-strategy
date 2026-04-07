@@ -1,261 +1,245 @@
 # Content Intelligence Agent
 
-> An AI-powered agent that combines **web research**, **internal knowledge retrieval (RAG)**, **multi-step planning**, and **self-evaluation** to deliver strategic content decisions — not just text generation.
+A portfolio AI project for research-driven content strategy, brand analysis, and structured content ideation.
 
-```
-                                  User Input
-                                      │
-                    ┌─────────────────┴───────────────────┐
-                    │          Planning Layer             │
-                    │                                     │
-                    │  · Classifies intent                │
-                    │  · Selects task type                │
-                    │    (research / comparison /         │
-                    │     ideation / rewrite / summary)   │
-                    │  · Decides if research is needed    │
-                    └─────────────────┬───────────────────┘
-                                      │
-                    ┌─────────────────┴────────────────────────┐
-                    │      Generation Layer                    │
-                    │      Gemini + Function Calling           │
-                    │                                          │
-                    │  ┌───────────┐  ┌───────────┐  ┌───────────────────┐
-                    │  │ Web       │  │ URL       │  │ Knowledge Search  │
-                    │  │ Search    │  │ Reader    │  │                   │
-                    │  │ (Tavily)  │  │ (fetch)   │  │ RAG + Embeddings  │
-                    │  └───────────┘  └───────────┘  └───────────────────┘
-                    │                                          │
-                    │  Gemini selects tools autonomously       │
-                    │  and loops until no calls remain         │
-                    └─────────────────┬────────────────────────┘
-                                      │
-                    ┌─────────────────┴───────────────────┐
-                    │         Evaluation Layer            │
-                    │                                     │
-                    │  · Checks alignment to request      │
-                    │  · Checks clarity and depth         │
-                    │  · Checks evidence usage            │
-                    │  · Triggers revision if needed      │
-                    └─────────────────┬───────────────────┘
-                                      │
-                               ┌──────┴──────┐
-                               │  pass       │  revise
-                               │             └──────────────────┐
-                               ▼                                ▼
-                    ┌─────────────────┐             ┌──────────────────────┐
-                    │    Response     │             │  Revision Loop       │
-                    │                 │             │  Re-generates with   │
-                    │  Streamed via   │◄────────────│  evaluator feedback  │
-                    │  SSE (Web UI)   │             └──────────────────────┘
-                    │  or CLI output  │
-                    └─────────────────┘
-```
+This project combines web research, internal knowledge retrieval, multi-step planning, response evaluation, and a lightweight chat UI. I built it to explore an AI workflow that feels closer to a real product than a basic chatbot demo.
 
----
+## Why I built this
 
-## What Makes This Different
+My background combines marketing, digital strategy, and full-stack development. I wanted to build a project that reflects that mix.
 
-| Feature | Generic LLM Chat | This Agent |
-|---|---|---|
-| Task planning before generation | ❌ | ✅ Classifies intent, selects strategy |
-| Live web research | ❌ | ✅ Tavily API integration |
-| Internal knowledge base (RAG) | ❌ | ✅ Semantic search with embeddings |
-| Self-evaluation & revision | ❌ | ✅ Quality gate before responding |
-| Conversation memory | Basic | ✅ Configurable rolling window |
-| Structured output formats | ❌ | ✅ Bullets, tables, sections, paragraphs |
+Instead of creating a generic chat app, I focused on an AI agent that can help with tasks such as:
 
----
+- comparing competitor messaging
+- extracting positioning angles
+- generating content ideas grounded in research
+- adapting outputs to a clearer brand or audience context
 
-## Capabilities
+The goal was to build something that shows product thinking, structured backend logic, and practical AI integration in one project.
 
-| Task Type | What It Does |
-|---|---|
-| **Research** | Searches the web for trends, news, and data, then synthesizes findings |
-| **Comparison** | Contrasts options with structured analysis and implications |
-| **Ideation** | Generates content ideas with strategic variety |
-| **Rewrite** | Improves existing copy aligned to audience and goals |
-| **Summarization** | Condenses sources into concise key takeaways |
-| **General Q&A** | Answers questions using knowledge base and/or web |
+## What it does
 
----
+The agent can:
 
-## Tech Stack
+- plan a response before generating it
+- decide when to use tools
+- search the web for recent or external information
+- read a public URL and extract useful text
+- retrieve relevant internal knowledge from a local indexed knowledge base
+- evaluate and improve its own draft when needed
+- stream responses to the frontend with status updates
 
-| Layer | Technology |
-|---|---|
-| Language | TypeScript (ES2022, ESM) |
-| LLM | Google Gemini (`gemini-2.5-flash-lite`) |
-| Embeddings | Gemini Embedding API (`gemini-embedding-001`) |
-| Web Search | Tavily API |
-| Backend | Express.js 5 |
-| Frontend | Vanilla JS + HTML/CSS (dark theme) |
-| Validation | Zod |
-| RAG Storage | JSON-based vector index |
+## Main features
 
----
+- **Tool-based workflow**  
+  The agent can use web search, URL reading, and internal knowledge retrieval instead of answering everything directly.
 
-## Architecture
+- **Planning step**  
+  A planner decides whether the request should be answered directly or whether tools should be used first.
 
-```
-src/
-├── agent.ts                 # Core agent: plan → generate → evaluate → revise
-├── planner.ts               # Task classification and strategy selection
-├── evaluator.ts             # Response quality gate
-├── prompts.ts               # System prompt definition
-├── config.ts                # Zod-validated environment config
-├── server.ts                # Express server with SSE streaming
-├── index.ts                 # CLI entry point
-├── gemini/
-│   ├── client.ts            # Gemini API client (singleton)
-│   └── generation-config.ts # Token budgets, tool configs, JSON schemas
-├── rag/
-│   ├── chunker.ts           # Text chunking for knowledge docs
-│   ├── embeddings.ts        # Vector embedding generation
-│   ├── indexer.ts           # Build & persist knowledge index
-│   ├── retriever.ts         # Cosine similarity search
-│   └── types.ts             # Shared RAG type definitions
-├── tools/
-│   ├── index.ts             # Tool declarations + router
-│   ├── web-search.ts        # Tavily web search
-│   ├── read-url.ts          # URL content extraction
-│   └── knowledge-search.ts  # RAG-powered knowledge lookup
-└── scripts/
-    └── build-knowledge-index.ts  # Pre-build embedding index
+- **Knowledge retrieval (RAG)**  
+  Local markdown documents are indexed into a lightweight JSON knowledge store, then retrieved with cosine similarity.
+
+- **Response evaluation**  
+  In showcase mode, the agent can review and improve a draft before returning the final answer.
+
+- **Conversation memory**  
+  The app keeps a short rolling memory window to preserve context without growing unbounded.
+
+- **SSE streaming frontend**  
+  The UI shows progress updates, tool usage, and streaming text output in real time.
+
+- **Configurable runtime modes**  
+  The app supports a cost-saving mode and a showcase mode.
+
+## Workflow
+
+```text
+User Message
+      │
+   Planner
+      │
+   Direct? ──── Yes ────────────────────► Generate Response
+      │                                            │
+      No                                           │
+      │                                            │
+   Tools / Knowledge Retrieval                     │
+      │                                            │
+   Draft Response                                  │
+      │                                            ▼
+   Evaluator (optional) ──────────────────► Final Response
+                                                   │
+                                             Stream to UI
 ```
 
----
+## Example use cases
 
-## Agent Workflow
+Here are a few example prompts that work well with this project:
 
-1. **Plan** — The planner classifies the user's intent (research, comparison, ideation, rewrite, summarization, general) and determines whether external research is needed.
+1. Competitor positioning analysis
 
-2. **Generate** — Gemini produces a response using function calling. The model autonomously decides when to invoke tools:
-   - `web_search` — live web results via Tavily
-   - `read_url` — extract and parse content from a URL
-   - `knowledge_search` — semantic search over internal documents (audiences, style guide, competitor notes, content strategy)
+Compare the messaging of three project management tools and identify the strongest positioning angle for startup founders.
 
-3. **Evaluate** — An evaluation layer checks alignment, clarity, evidence usage, and depth. If the response falls short, it triggers a revision cycle with specific feedback.
+2. Content ideation grounded in context
 
-4. **Respond** — The final response is streamed to the frontend via Server-Sent Events (SSE) with real-time status updates showing each phase.
+Generate homepage headline options for an AI automation studio targeting B2B service companies.
 
----
+3. Research + adaptation
 
-## RAG Pipeline
+Read this article, summarize the main ideas, and turn them into LinkedIn post angles for a brand with a confident but clear tone.
 
-The agent includes a lightweight Retrieval-Augmented Generation pipeline:
+4. Internal knowledge usage
 
-1. **Index** — Markdown files in `knowledge/` are chunked and embedded using Gemini's embedding model
-2. **Store** — Vectors are persisted in `data/knowledge-index.json`
-3. **Retrieve** — Queries are embedded and matched via cosine similarity against the index
-4. **Augment** — Top results are injected into the generation context
+Based on the internal knowledge base, suggest a content strategy for a premium consulting brand focused on trust and clarity.
 
-**Knowledge base includes:**
-- Target audience profiles (startup founders, marketing teams, product teams)
-- Brand voice & style guide
-- Competitor analysis notes
-- Content strategy for 2026
+## How it works
 
----
+At a high level, the request flow is:
 
-## Running Modes
+1. The user sends a message from the UI or CLI.
+2. The planner decides whether the request can be answered directly or whether tools should be used.
+3. The agent optionally uses:
+   - web search
+   - URL reading
+   - local knowledge retrieval
+4. A draft response is generated.
+5. If enabled, the evaluator reviews and improves the draft.
+6. The final response is returned or streamed to the frontend.
 
-| Mode | Tokens | Extended Thinking | Use Case |
-|---|---|---|---|
-| `cost_saver` | 700 max | Disabled | Development, testing |
-| `showcase` | 1800 max | 256 budget | Demos, production quality |
+## Tech stack
+- Backend: TypeScript, Node.js, Express
+- Frontend: HTML, CSS, vanilla TypeScript
+- LLM: Gemini
+- Web search: Tavily
+- RAG: Local markdown ingestion + JSON knowledge index
+- Streaming: Server-Sent Events (SSE)
 
----
+## Project structure
 
-## Setup
+```text
+├── data/
+│   └── knowledge-index.json
+├── frontend/
+│   ├── index.html
+│   ├── src/
+│   │   ├── app.ts
+│   │   ├── styles.css
+│   │   ├── state.ts
+│   │   ├── types.ts
+│   │   ├── utils.ts
+│   │   └── markdown.ts
+│   └── tsconfig.json
+├── knowledge/
+│   ├── content_strategy.md
+│   ├── ideal_customer_profile.md
+│   ├── messaging_frameworks.md
+│   └── positioning_principles.md
+├── src/
+│   ├── agent.ts
+│   ├── cli.ts
+│   ├── config.ts
+│   ├── evaluator.ts
+│   ├── planner.ts
+│   ├── server.ts
+│   ├── types.ts
+│   ├── rag/
+│   │   ├── embed.ts
+│   │   ├── index.ts
+│   │   ├── retrieve.ts
+│   │   └── types.ts
+│   ├── scripts/
+│   │   └── build-knowledge-index.ts
+│   ├── services/
+│   │   ├── gemini.ts
+│   │   └── tavily.ts
+│   └── tools/
+│       ├── index.ts
+│       ├── read-url.ts
+│       ├── retrieve-knowledge.ts
+│       └── web-search.ts
+├── README.md
+├── DECISIONS.md
+├── package.json
+└── tsconfig.json
+```
 
-### Prerequisites
+## Local setup
 
-- Node.js 18+
-- A [Google Gemini API key](https://aistudio.google.com/apikey)
-- A [Tavily API key](https://tavily.com)
+1. Install dependencies
 
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/AI-Agent-content-strategy.git
-cd AI-Agent-content-strategy
-
-# Install dependencies
 npm install
 
-# Create environment file
-cp .env.example .env
-```
+2. Create your environment file
 
-### Environment Variables
+Copy .env.example to .env and add your keys:
 
-```env
-GEMINI_API_KEY=your-gemini-key        # Required
-TAVILY_API_KEY=your-tavily-key        # Required
-GEMINI_MODEL=gemini-2.5-flash-lite    # Optional (default)
-APP_MODE=cost_saver                   # cost_saver | showcase
-EVALUATOR_ENABLED=true                # Enable quality evaluation
-PORT=3000                             # Server port
-```
+GEMINI_API_KEY=your_key_here
+TAVILY_API_KEY=your_key_here
+GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+APP_MODE=cost_saver
+EVALUATOR_ENABLED=true
+PORT=3000
 
-### Build the Knowledge Index
+3. Build the knowledge index
 
-```bash
 npm run knowledge:index
-```
 
-### Run
 
-```bash
-# Web UI (recommended)
+4. Start the web app
+
 npm run web
-# → Open http://localhost:3000
 
-# CLI mode
+Then open:
+
+http://localhost:3000
+
+## Available scripts
+
+npm run build
 npm run dev
-
-# Production build
-npm run build && npm start
-```
-
----
-
-## Interfaces
-
-### Web UI
-
-A dark-themed chat interface with:
-- Real-time response streaming (SSE)
-- Status indicators for each agent phase (planning, searching, evaluating...)
-- Tool usage logging
-- Sample prompts to get started
-- Conversation memory with reset option
-
-### CLI
-
-Interactive terminal chat with streaming output, `/clear` command, and the same agent capabilities.
-
-### API
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Health check with model & mode info |
-| `POST` | `/api/chat` | Single response (JSON) |
-| `GET` | `/api/chat/stream?message=...` | Streaming response (SSE) |
-| `POST` | `/api/reset` | Clear conversation memory |
-
----
-
-## License
-
-MIT
-
-To build the local knowledge index:
-
-````bash
+npm run cli
+npm run web
 npm run knowledge:index
 
-```bash
-npm install
-````
+
+## Design choices
+
+A short summary of the main technical decisions is available in DECISIONS.md
+
+## Known limitations
+
+This is still an MVP, so there are a few intentional limitations:
+
+- the knowledge layer uses a lightweight local JSON index instead of a full vector database
+- the frontend is intentionally minimal and focused on core interaction
+- URL reading is simplified and only supports public http/https pages
+- there is no authentication yet
+- observability is still basic
+- test coverage is not implemented yet
+
+
+## What I would improve next
+
+If I continued this project further, the next improvements would be:
+
+- show source references more clearly in the UI
+- add tests for planner, retrieval, and formatting utilities
+- improve URL safety controls further
+- add better response formatting and richer result cards
+- add lightweight analytics and request tracing
+- deploy the app and monitor real usage patterns
+
+## Why this project matters in my portfolio
+
+I built this project to show more than just API integration.
+
+It reflects how I think about:
+
+- product-oriented AI workflows
+- practical backend architecture
+- user-facing interaction design
+- content and research use cases
+- trade-offs between speed, cost, and quality
+
+For me, the goal was not to build the most complex agent possible, but to build a clear and explainable one.
