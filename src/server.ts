@@ -1,6 +1,9 @@
 import cors from "cors";
 import express from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import { join } from "node:path";
+import { z } from "zod";
 import { ContentIntelligenceAgent } from "./agent.js";
 import { config, logConfiguredServices } from "./config.js";
 
@@ -9,9 +12,40 @@ const agent = new ContentIntelligenceAgent();
 
 const frontendDir = join(process.cwd(), "frontend");
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(frontendDir));
+const chatBodySchema = z.object({
+  message: z.string().trim().min(1, "Message is required.").max(4000),
+});
+
+const streamQuerySchema = z.object({
+  message: z.string().trim().min(1, "Message is required.").max(4000),
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please try again later.",
+  },
+});
+
+function sendBadRequest(
+  res: express.Response,
+  message: string,
+  details?: unknown,
+): void {
+  res.status(400).json({
+    error: message,
+    ...(details ? { details } : {}),
+  });
+}
+
+function sendServerError(res: express.Response, message: string): void {
+  res.status(500).json({
+    error: message,
+  });
+}
 
 function writeSseEvent(
   res: express.Response,
@@ -21,6 +55,18 @@ function writeSseEvent(
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
+
+app.set("trust proxy", 1);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
+app.use(cors());
+app.use(express.json({ limit: "20kb" }));
+app.use("/api", apiLimiter);
+app.use(express.static(frontendDir));
 
 app.get("/", (_req, res) => {
   res.sendFile(join(frontendDir, "index.html"));
@@ -37,36 +83,29 @@ app.get("/api/health", (_req, res) => {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const message = String(req.body?.message || "").trim();
+    const parsed = chatBodySchema.safeParse(req.body);
 
-    if (!message) {
-      res.status(400).json({
-        error: "Message is required.",
-      });
+    if (!parsed.success) {
+      sendBadRequest(res, "Invalid request body.", parsed.error.flatten());
       return;
     }
 
-    const response = await agent.reply(message);
+    const response = await agent.reply(parsed.data.message);
 
     res.json({
       message: response,
     });
   } catch (error) {
     console.error("Chat endpoint error:", error);
-
-    res.status(500).json({
-      error: "Failed to generate agent response.",
-    });
+    sendServerError(res, "Failed to generate agent response.");
   }
 });
 
 app.get("/api/chat/stream", async (req, res) => {
-  const message = String(req.query.message || "").trim();
+  const parsed = streamQuerySchema.safeParse(req.query);
 
-  if (!message) {
-    res.status(400).json({
-      error: "Message is required.",
-    });
+  if (!parsed.success) {
+    sendBadRequest(res, "Invalid query parameters.", parsed.error.flatten());
     return;
   }
 
@@ -86,7 +125,7 @@ app.get("/api/chat/stream", async (req, res) => {
   });
 
   try {
-    await agent.replyWithEvents(message, async (event) => {
+    await agent.replyWithEvents(parsed.data.message, async (event) => {
       switch (event.type) {
         case "status":
           writeSseEvent(res, "status", {
